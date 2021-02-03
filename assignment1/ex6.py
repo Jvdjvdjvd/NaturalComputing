@@ -6,64 +6,36 @@ import numpy as np
 import matplotlib.pyplot as plt
 import operator
 
-cities = [
-    (0.2554,    18.2366),
-    (0.4339,    15.2476),
-    (0.7377,    8.3137),
-    (1.1354,    16.5638),
-    (1.5820,    17.3030),
-    (2.0913,    9.2924),
-    (2.2631,    17.3392),
-    (2.6373,    2.6425),
-    (3.0040,    19.5712),
-    (3.6684,    14.8018),
-    (3.8630,    13.7008),
-    (4.2065,    9.8224),
-    (4.8353,    2.0944),
-    (4.9785,    3.1596),
-    (5.3754,    17.6381),
-    (5.9425,    6.0360),
-    (6.1451,    3.8132),
-    (6.7782,    11.0125),
-    (6.9223,    7.7819),
-    (7.5691,    0.9378),
-    (7.8190,    13.1697),
-    (8.3332,    5.9161),
-    (8.5872,    7.8303),
-    (9.1224,    14.5889),
-    (9.4076,    9.7166),
-    (9.7208,    8.1154),
-    (10.1662,   19.1705),
-    (10.7387,   2.0090),
-    (10.9354,   5.1813),
-    (11.3707,   7.2406),
-    (11.7418,   13.6874),
-    (12.0526,   4.7186),
-    (12.6385,   12.1000),
-    (13.0950,   13.6956),
-    (13.3533,   17.3524),
-    (13.8794,   3.9479),
-    (14.2674,   15.8651),
-    (14.5520,   17.2489),
-    (14.9737,   13.2245),
-    (15.2841,   1.4455),
-    (15.5761,   12.1270),
-    (16.1313,   14.2029),
-    (16.4388,   16.0084),
-    (16.7821,   9.4334),
-    (17.3928,   12.9692),
-    (17.5139,   6.4828),
-    (17.9487,   7.5563),
-    (18.3958,   19.5112),
-    (18.9696,   19.3565),
-    (19.0928,   16.5453)
-]
+
+def read_cities(fileLocation, rownr = True):
+    """
+    reads citiy coordinates from a file. MAY NOT CONTAIN HEADER!
+    """
+    with open(fileLocation) as f:
+        cities = f.readlines()
+        cities = [c.strip().split(' ') for c in cities]
+        if rownr:
+            firstIDX = 1
+        else:
+            firstIDX = 0
+        cities = [(float(c[firstIDX]), float(c[-1])) for c in cities]
+    return cities
+
+cities = read_cities("assignment1/file-tsp.txt", False) #for given data
+cities = read_cities("assignment1/att48.tsp") #for other data (http://elib.zib.de/pub/mp-testdata/tsp/tsplib/tsp/att48.tsp) - without header and footer
 
 
 def gen_candidate():
+    """
+    Generate a random iteration of cities
+    """
     return np.random.permutation(range(0, len(cities)))
 
 def gen_two_assending_indices():
+    """
+    returns two random indices where the first one is smaller than the seqond one. The indices are between 0 and len(cities).
+    """
+
     length = len(cities)
     
     idx1 = random.randrange(0, length)
@@ -79,6 +51,9 @@ def gen_two_assending_indices():
     return (idx1, idx2)
 
 def fitness_ga(candidate):
+    """
+    Returns the fitness of a candidate by calculating the distance when you walk from city to city
+    """
     currentCity = candidate[0]
     distance = 0
     for nextCity in candidate[1:]:
@@ -88,17 +63,21 @@ def fitness_ga(candidate):
     return distance
 
 def crossover_ga(parent1, parent2):
+    """
+    Does crossover between two partents. A slice is selected from both parents and the missing numbers are completed based on the other parent.
+    """
     length = len(parent1)
 
-    (cut1, cut2) = gen_two_assending_indices()
+    (cut1, cut2) = gen_two_assending_indices() #get two cuts
 
     offspring1 = [None] * length
     offspring2 = [None] * length
-    offspring1[cut1:cut2] = parent1[cut1:cut2]
+    offspring1[cut1:cut2] = parent1[cut1:cut2] #get the initial offspring by taking a parent slice
     offspring2[cut1:cut2] = parent2[cut1:cut2]
     
     j = cut2
     q = cut2
+    # fill the offspring based on their parents
     for i in range(cut2, length + cut2):
         i2 = i % length
         j2 = j % length
@@ -115,62 +94,82 @@ def crossover_ga(parent1, parent2):
     return (offspring1, offspring2)
     
 def mutation_ga(candidate):
+    """
+    performs pointwise mutation on a candidate
+    """
     (idx1, idx2) = gen_two_assending_indices()
-    tmp = candidate[idx1]
-    candidate[idx1] = candidate[idx2]
-    candidate[idx2] = tmp
+    candidate[idx1], candidate[idx2]  = candidate[idx2], candidate[idx1]
 
+       
+def swap_positions(candidate, i, j):
+    """
+    swaps the positions of a candidate
+    """
+    new_candidate = candidate.copy()
+    new_candidate[i], new_candidate[j] = new_candidate[j], new_candidate[i]
+    return new_candidate
+    
+def get_single_swaps(candidate):
+    """
+    gives all possible candidates where two positions are swapped.
+    """
+    possible_candidates = [candidate]
+    for i in range(len(candidate)-1):
+        for j in range(i+1, len(candidate)):
+            possible_candidates.append(swap_positions(candidate, i,j))
+    return possible_candidates
+
+def do_local_search(candidate):
+    """
+    performs a local search by generating all neighbours of the candidate and selecting the best one
+    """
+    neighbourhood = get_single_swaps(candidate)
+    fitnesses = [fitness_ga(c) for c in neighbourhood]
+    best = min(fitnesses)
+    best_idx = fitnesses.index(best)
+    best_of_all = neighbourhood[best_idx]
+    return best_of_all
 
 def run_ga(iterations, n, k, memetic=False):
-    candidates = [gen_candidate() for _ in range(n)]
+    """
+    runs the genetic algorithm
+    @param n: the initial population size
+    @param k: amount of random selected participants to look in for offspring generation
+    """
+
+    candidates = [gen_candidate() for _ in range(n)] #get initial candidates
+    if memetic:
+        candidates = [do_local_search(c) for c in candidates] # do a local search if it is memetic
     candidates = [(fitness_ga(c), c) for c in candidates]
 
     current_best = candidates[0][0]
     for _ in range(iterations):
-        participants = random.choices(candidates, k = k)
+        participants = random.choices(candidates, k = k) #select k random participants
         participants.sort(key=operator.itemgetter(0))
         [parent1, parent2] = participants[:2]
-        (offspring1, offspring2) = crossover_ga(parent1[1], parent2[1])
+        (offspring1, offspring2) = crossover_ga(parent1[1], parent2[1]) #generate offspring by crossover
 
-        mutation_ga(offspring1)
+        mutation_ga(offspring1) #mutate offspring
         mutation_ga(offspring2)
 
         if memetic:
-            pass
+            offspring1 = do_local_search(offspring1) #do a local search on the offspring
+            offspring2 = do_local_search(offspring2)
 
-        candidates.append((fitness_ga(offspring1), offspring1))
+            
+
+        candidates.append((fitness_ga(offspring1), offspring1)) #add offspring to canidates
         candidates.append((fitness_ga(offspring2), offspring2))
 
-        candidates.sort(key=operator.itemgetter(0))
-        candidates = candidates[:n]
+        candidates.sort(key=operator.itemgetter(0)) 
+        candidates = candidates[:n] #select the best candidates as new population
         
         if (current_best > candidates[0][0]):
             current_best = candidates[0][0]
             print(candidates[0][0])
     
     return candidates[0]
-        
-def swap_positions(candidate, i, j):
-    new_candidate = candidate.copy()
-    new_candidate[i], new_candidate[j] = new_candidate[j], new_candidate[i]
-    return new_candidate
-    
-def get_single_swaps(candidate):
-    possible_candidates = [candidate]
-    for i in range(len(candidate)-1):
-        for j in range(i+1, len(candidate)):
-            possible_candidates.append([swap_positions(candidate, i,j)])
-    return possible_candidates
-
-def do_local_search(candidate):
-    neighbourhood = get_single_swaps(candidate)
-    fitnesses = [fitness_ga(c) for c in neighbourhood]
-    best = min(fitnesses)
-    best_idx = neighbourhood.index(best)
-    best_of_all = neighbourhood[best_idx]
-    return best_of_all
-
-
 
 if __name__ == '__main__':
+    print(cities)
     print(run_ga(50000, 50, 20))
