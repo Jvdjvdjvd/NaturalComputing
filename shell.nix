@@ -9,6 +9,8 @@ let extensions = (with pkgs.vscode-extensions; [
 in pkgs.mkShell {
   buildInputs = [
     python38
+    python38Packages.deap
+    python38Packages.pygraphviz
     python38Packages.matplotlib
     python38Packages.numpy
     vscode-with-extensions
