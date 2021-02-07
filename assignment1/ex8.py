@@ -43,7 +43,17 @@ data = {
 def fitness(individual, points):
     fn = toolbox.compile(expr=individual)
     # Compute the aboslute sum of errors
-    return (math.fsum([abs(data[x] - fn(x)) for x in points]), )
+    try:
+        err = 0.
+        for x in points:
+            err += abs(data[x] - fn(x))
+
+        return (err,)
+    except OverflowError:
+        # Evaluation of expression sometimes fails with a math range error,
+        # even though all registered function symbols should be defined for the
+        # entire range, or they have a special handler function.
+        return (999,)
 
 
 def zerodiv(left, right):
@@ -92,14 +102,11 @@ if __name__ == '__main__':
     toolbox.register("select", tools.selTournament, tournsize=3)
     toolbox.register("mate", gp.cxOnePoint)
 
+
     # Statistics.
-    stats_fit = dp.tools.Statistics(lambda ind: ind.fitness.values)
-    stats_size = tools.Statistics(len)
-    mstats = tools.MultiStatistics(fitness=stats_fit, size=stats_size)
-    mstats.register("avg", np.mean)
-    mstats.register("std", np.std)
-    mstats.register("min", np.min)
-    mstats.register("max", np.max)
+    stats_fit = dp.tools.Statistics(lambda ind: (ind.fitness.values, len(ind)))
+    mstats = tools.MultiStatistics(fitness=stats_fit)
+    mstats.register("min", min)
 
     # Run the evolution.
     cxpb = 0.7
@@ -112,18 +119,18 @@ if __name__ == '__main__':
 
     # Plot the results.
     gen = log.select("gen")
-    fit_mins = log.chapters["fitness"].select("min")
-    size_min = log.chapters["size"].select("min")
+    fit_mins = [x[0][0] for x in log.chapters["fitness"].select("min")]
+    size_min = [x[1] for x in log.chapters["fitness"].select("min")]
 
     fig, ax1 = plt.subplots()
-    line1 = ax1.plot(gen, fit_mins, "b-", label="Minimum fitness")
+    line1 = ax1.plot(gen, fit_mins, "b-", label="Fitness")
     ax1.set_xlabel("Generation")
     ax1.set_ylabel("Fitness", color="b")
     for tl in ax1.get_yticklabels():
         tl.set_color("b")
 
     ax2 = ax1.twinx()
-    line2 = ax2.plot(gen, size_min, "r-", label="Minimum size")
+    line2 = ax2.plot(gen, size_min, "r-", label="Size")
     ax2.set_ylabel("Size", color="r")
     for tl in ax2.get_yticklabels():
         tl.set_color("r")
