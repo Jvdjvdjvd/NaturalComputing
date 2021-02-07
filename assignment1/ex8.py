@@ -113,7 +113,7 @@ if __name__ == '__main__':
     # Plot the results.
     gen = log.select("gen")
     fit_mins = log.chapters["fitness"].select("min")
-    size_avgs = log.chapters["size"].select("avg")
+    size_min = log.chapters["size"].select("min")
 
     fig, ax1 = plt.subplots()
     line1 = ax1.plot(gen, fit_mins, "b-", label="Minimum fitness")
@@ -123,7 +123,7 @@ if __name__ == '__main__':
         tl.set_color("b")
 
     ax2 = ax1.twinx()
-    line2 = ax2.plot(gen, size_avgs, "r-", label="Average size")
+    line2 = ax2.plot(gen, size_min, "r-", label="Minimum size")
     ax2.set_ylabel("Size", color="r")
     for tl in ax2.get_yticklabels():
         tl.set_color("r")
@@ -133,3 +133,4 @@ if __name__ == '__main__':
     ax1.legend(lns, labs, loc="center right")
 
     plt.show()
+    print(hof[0])
