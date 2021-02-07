@@ -5,6 +5,7 @@ import math
 import numpy as np
 import matplotlib.pyplot as plt
 import operator
+from datetime import datetime, timedelta
 
 
 def read_cities(fileLocation, rownr = True):
@@ -21,8 +22,7 @@ def read_cities(fileLocation, rownr = True):
         cities = [(float(c[firstIDX]), float(c[-1])) for c in cities]
     return cities
 
-cities = read_cities("assignment1/file-tsp.txt", False) #for given data
-cities = read_cities("assignment1/att48.tsp") #for other data (http://elib.zib.de/pub/mp-testdata/tsp/tsplib/tsp/att48.tsp) - without header and footer
+cities = None
 
 
 def gen_candidate():
@@ -130,7 +130,7 @@ def do_local_search(candidate):
     best_of_all = neighbourhood[best_idx]
     return best_of_all
 
-def run_ga(iterations, n, k, memetic=False):
+def run_ga(dt, n, k, memetic=False):
     """
     runs the genetic algorithm
     @param n: the initial population size
@@ -143,7 +143,10 @@ def run_ga(iterations, n, k, memetic=False):
     candidates = [(fitness_ga(c), c) for c in candidates]
 
     current_best = candidates[0][0]
-    for _ in range(iterations):
+    results = [current_best]
+
+    start_time = datetime.now()
+    while (datetime.now() - start_time) < dt:
         participants = random.choices(candidates, k = k) #select k random participants
         participants.sort(key=operator.itemgetter(0))
         [parent1, parent2] = participants[:2]
@@ -163,13 +166,54 @@ def run_ga(iterations, n, k, memetic=False):
 
         candidates.sort(key=operator.itemgetter(0)) 
         candidates = candidates[:n] #select the best candidates as new population
-        
-        if (current_best > candidates[0][0]):
-            current_best = candidates[0][0]
-            print(candidates[0][0])
+
+        results.append(candidates[0][0])
     
-    return candidates[0]
+    return results
 
 if __name__ == '__main__':
-    print(cities)
-    print(run_ga(50000, 50, 20))
+    running_time = timedelta(seconds = 15)
+    
+    # for given data
+    cities = read_cities("./file-tsp.txt", False)
+
+    non_memetic = run_ga(running_time, 50, 20, memetic = False)
+    
+    fig = plt.figure()
+    plt.plot(non_memetic)
+    fig.suptitle('file-tsp non-memotic', fontsize=20)
+    plt.xlabel('iterations', fontsize=18)
+    plt.ylabel('TSP total distance', fontsize=16)
+    fig.savefig('6_files-tsp_non-memetic.png')
+
+    
+    memetic = run_ga(running_time, 50, 20, memetic = True)
+
+    fig = plt.figure()
+    plt.plot(memetic)
+    fig.suptitle('file-tsp memotic', fontsize=20)
+    plt.xlabel('iterations', fontsize=18)
+    plt.ylabel('TSP total distance', fontsize=16)
+    fig.savefig('6_files-tsp_memetic.png')
+
+    # for other data (http://elib.zib.de/pub/mp-testdata/tsp/tsplib/tsp/att48.tsp) - without header and footer
+    cities = read_cities("./att48.tsp")
+
+    non_memetic = run_ga(running_time, 50, 20, memetic = False)
+    
+    fig = plt.figure()
+    plt.plot(non_memetic)
+    fig.suptitle('att48 non-memotic', fontsize=20)
+    plt.xlabel('iterations', fontsize=18)
+    plt.ylabel('TSP total distance', fontsize=16)
+    fig.savefig('6_att48_non_memetic.png')
+
+
+    memetic = run_ga(running_time, 50, 20, memetic = True)
+
+    fig = plt.figure()
+    plt.plot(memetic)
+    fig.suptitle('att48 memotic', fontsize=20)
+    plt.xlabel('iterations', fontsize=18)
+    plt.ylabel('TSP total distance', fontsize=16)
+    fig.savefig('6_att48_memetic.png')
