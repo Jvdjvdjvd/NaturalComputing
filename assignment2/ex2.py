@@ -84,19 +84,15 @@ if __name__ == '__main__':
         0.99: [],
     }
 
+    fig = plt.figure()
     for k in results:
         reset()
         for _ in range(iterations):
             omega = k
             results[k].append(fitness(positions[0]))
             run_step()
+        plt.plot(results[k], label="Omega = {}".format(omega))
 
-    fig = plt.figure()
-    plt.plot(results[0.1], 'r', label="Omega = 0.1")
-    plt.plot(results[0.25], 'g', label="Omega = 0.25")
-    plt.plot(results[0.5], 'b', label="Omega = 0.5")
-    plt.plot(results[0.75], 'm', label="Omega = 0.75")
-    plt.plot(results[0.99], 'k', label="Omega = 0.99")
     leg = plt.legend(loc='best', ncol=3, mode="expand", shadow=True, fancybox=True)
     fig.suptitle('Single particle swarm, omega < 1', fontsize=20)
     plt.xlabel('Iteration', fontsize=18)
