@@ -1,4 +1,6 @@
 import numpy as np
+import matplotlib.pyplot as plt
+from sklearn import datasets
 
 
 class kmeans:
@@ -6,7 +8,7 @@ class kmeans:
         self.groups=groups
         self.centroids = None
 
-    def train_kmeans(self, trainData, iterations = 20) -> object:
+    def train_kmeans(self, trainData, iterations = 200) -> object:
         """
         Trains the centroids of the kmeans class using the given trainData (shape = (S,F), samples, features)
         todo: in this version it trains for a set amount of iterations. In future versions it would be good to train untill convergence
@@ -27,7 +29,9 @@ class kmeans:
                 closest_centroids = np.argmin(distances, axis=1)  # find nearest centroid per sample
                 idxes = [j for j in range(len(trainData)) if closest_centroids[j] == i]
                 if len(idxes) > 0: # do not change if no samples are present this run
+                    print(trainData[idxes])
                     center = np.mean(trainData[idxes], axis=0)
+                    print(center)
                     self.centroids[i] = center
         return centroid_log
 
@@ -49,10 +53,18 @@ class kmeans:
              range(self.groups)])
         return centroids
 
+
 if __name__ == '__main__':
+    iris = datasets.load_iris()
+    X = iris.data[:, :2]  # we only take the first two features.
+    y = iris.target
     data = np.random.random((500, 2))
     bla = kmeans(5)
-    lg = bla.train_kmeans(data)
+    lg = bla.train_kmeans(X)
+    plt.plot(X, 'r+')
+    plt.plot(lg[0], 'go')
+    plt.plot(lg[-1], 'bo')
+
 
 
 
