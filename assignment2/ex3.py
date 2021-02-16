@@ -2,13 +2,12 @@ import numpy as np
 import matplotlib.pyplot as plt
 from sklearn import datasets
 
-
 class kmeans:
     def __init__(self, groups):
         self.groups=groups
         self.centroids = None
 
-    def train_kmeans(self, trainData, iterations = 200) -> object:
+    def train_kmeans(self, trainData, iterations = 3) -> object:
         """
         Trains the centroids of the kmeans class using the given trainData (shape = (S,F), samples, features)
         todo: in this version it trains for a set amount of iterations. In future versions it would be good to train untill convergence
@@ -19,20 +18,24 @@ class kmeans:
         min_values = np.min(trainData, axis=0) #get range to place centroids in
         max_values = np.max(trainData, axis=0)
         centroid_log = np.zeros((iterations, self.groups, len(min_values))) #create a log file
+        #print(centroid_log)
 
         self.centroids = self.generate_centroids(min_values, max_values) #generate inital centroids
 
         for it in range(iterations):
             centroid_log[it] = self.centroids.copy()
+            distances = self.get_distances_to_centroids(trainData)
+            closest_centroids = np.argmin(distances, axis=1)  # find nearest centroid per sample
+            #print('newRun')
             for i in range(self.groups): # update the centroids
-                distances = self.get_distances_to_centroids(trainData)
-                closest_centroids = np.argmin(distances, axis=1)  # find nearest centroid per sample
                 idxes = [j for j in range(len(trainData)) if closest_centroids[j] == i]
+                #print(idxes)
                 if len(idxes) > 0: # do not change if no samples are present this run
-                    print(trainData[idxes])
                     center = np.mean(trainData[idxes], axis=0)
-                    print(center)
+                    #print(self.centroids[i])
+                    #print(center)
                     self.centroids[i] = center
+                    #print(self.centroids[i])
         return centroid_log
 
     def get_distances_to_centroids(self, data):
@@ -53,17 +56,21 @@ class kmeans:
              range(self.groups)])
         return centroids
 
-
 if __name__ == '__main__':
     iris = datasets.load_iris()
     X = iris.data[:, :2]  # we only take the first two features.
     y = iris.target
-    data = np.random.random((500, 2))
-    bla = kmeans(5)
-    lg = bla.train_kmeans(X)
-    plt.plot(X, 'r+')
-    plt.plot(lg[0], 'go')
-    plt.plot(lg[-1], 'bo')
+    xx, xy = zip(*X)
+    bla = kmeans(4)
+    lg = bla.train_kmeans(X, iterations=200)
+
+    plt.figure(2, figsize=(8, 6))
+    plt.clf()
+    plt.scatter(X[:, 0], X[:, 1], edgecolor='k')
+    plt.scatter(lg[0][:, 0], lg[0][:, 1], edgecolor='k', c='g')
+    plt.scatter(lg[-1][:, 0], lg[-1][:, 1], edgecolor='k', c='r')
+
+    plt.show()
 
 
 
