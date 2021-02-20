@@ -13,6 +13,8 @@ in pkgs.mkShell {
     python38Packages.pygraphviz
     python38Packages.matplotlib
     python38Packages.numpy
+    python38Packages.scipy
+    python38Packages.scikitlearn
     vscode-with-extensions
   ];
 }
