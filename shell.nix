@@ -8,6 +8,7 @@ let extensions = (with pkgs.vscode-extensions; [
     };
 in pkgs.mkShell {
   buildInputs = [
+    openjdk
     python38
     python38Packages.deap
     python38Packages.pygraphviz
