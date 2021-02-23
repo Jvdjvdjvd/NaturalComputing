@@ -1,4 +1,8 @@
-with (import <nixpkgs> {});
+with ((import (fetchTarball {
+  name = "nixpkgs-master-2021-02-23";
+  url = "https://github.com/nixos/nixpkgs/archive/c7d0dbe094c.tar.gz";
+  sha256 = "1rwjfjwwaic56n778fvrmv1s1vzw565gqywrpqv72zrrzmavhyrx";
+}) {}));
 let extensions = (with pkgs.vscode-extensions; [
       ms-vsliveshare.vsliveshare
       ms-python.python
