@@ -3,72 +3,75 @@
 import numpy as np
 import matplotlib.pyplot as plt
 from subprocess import Popen, PIPE, STDOUT
-from signal import SIGINT
 from time import sleep
 
-
-def run_negative_selection(training_file, testing_set):
-    cmd = ['java', '-jar', './negative-selection/negsel2.jar', '-self', training_file, '-n', '10', '-r', '4', '-c', '-l']
-    in_data = bytes('\n'.join(testing_set), encoding="raw_unicode_escape") + b'\x1a'
+def run_negative_selection(training_file, n, r, testing_data):
+    cmd = ['java', '-jar', './negative-selection/negsel2.jar', '-self', training_file, '-n', str(n), '-r', str(r), '-c', '-l']
+    in_data = bytes('\n'.join(testing_data), encoding="raw_unicode_escape") + b'\x1a'
     p = Popen(cmd, stdout=PIPE, stdin=PIPE, stderr=STDOUT)
     p.stdin.write(in_data)
-    result = p.communicate()[0]
-    return [float(s) for s in result.decode().splitlines()]
+    return [float(s) for s in p.communicate()[0].decode().splitlines()]
 
-def get_AUC_from_anomalities(anomalies):
-    sorted_anomalies = np.sort(anomalies)
+def get_AUC_from_anomalities(data):
+    sorted_data = sorted(data, key=lambda x: x[2])
     
-    l = len(sorted_anomalies)
+    l = len(sorted_data)
 
-    distinct_anomalies = []
+    distinct_scores = []
     prev_i = 0
-    prev_ele = sorted_anomalies[0]
-    for i, cut_off in enumerate(sorted_anomalies):
-        if prev_ele != cut_off:
-            distinct_anomalies.append((prev_i, i, prev_ele))
+    prev_score = sorted_data[0]
+    for i, d in enumerate(sorted_data):
+        (_, _, score) = d
+        if prev_score != score:
+            distinct_scores.append((prev_i, i))
             prev_i = i
-            prev_ele = cut_off
+            prev_score = score
 
-    print(distinct_anomalies)
-    print("---------")
+    distinct_scores.append((prev_i, l))
 
-    sensitivity = []
-    specificity = []
-    for i, j, cut_off in distinct_anomalies:
-        sens = 100*(l - j)/l #sensitivity = how many higher values
-        spec = 100*(i/l) #amount with lower score
-        sensitivity.append(sens)
-        specificity.append(spec)
+    sensitivities = []
+    specificities = []
+    for i, j in distinct_scores:
+        score = sorted_data[i][2]
+        sensitivity = len([w for (l, w, s) in sorted_data if s >= score and l == True])
+        specificity = len([w for (l, w, s) in sorted_data if s < score and l == False])
 
-    print(sensitivity)
-    print("---------")
-    print(specificity)
+        sensitivities.append(sensitivity / l)
+        specificities.append(specificity / l)
 
-    inverse_spec = 100*np.ones_like(specificity) - specificity
-    plt.plot(inverse_spec, sensitivity)
-    plt.plot([0,100], [0,100], 'r--')
+    inverse_spec = np.ones_like(specificities) - specificities
+    plt.plot(inverse_spec, sensitivities)
+    plt.plot([0.0,1.0], [0.0,1.0], 'r--')
     plt.xlabel('False positive rate (1-specificity)')
     plt.ylabel('True positive rate (Sensitivity)')
-    plt.title(
-        'AUC curve')
+    plt.title('ROC curve')
     plt.savefig('temp.png')
 
-    return None
+    # return None
 
 if __name__ == '__main__':
     training_file = "./negative-selection/english.train"
 
-    testing_english = None
-    testing_tagalog = None
+    n = 10
+    r= 4
+
+    testing_english_words = None
+    testing_english_labels = None
+    testing_english_scores = None
 
     with open('negative-selection/tagalog.test', 'r') as f:
-        testing_tagalog = [s.strip() for s in f.readlines()]
-    
+        (testing_english_labels, testing_english_words) = zip(*[(True, s.strip()) for s in f.readlines()])
+        testing_english_scores = run_negative_selection(training_file, n, r, testing_english_words)
+
+    testing_tagalog_words = None
+    testing_tagalog_labels = None
+    testing_tagalog_scores = None
+
     with open('negative-selection/english.test', 'r') as f:
-        testing_english = [s.strip() for s in f.readlines()]
+        (testing_tagalog_labels, testing_tagalog_words) = zip(*[(False, s.strip()) for s in f.readlines()])
+        testing_tagalog_scores = run_negative_selection(training_file, n, r, testing_tagalog_words)
 
-    total_set = testing_tagalog + testing_english
+    english_data = list(zip(testing_english_labels, testing_english_words, testing_english_scores))
+    tagalog_data = list(zip(testing_tagalog_labels, testing_tagalog_words, testing_tagalog_scores))
 
-    anomilies = run_negative_selection(training_file, total_set)
-
-    auc = get_AUC_from_anomalities(anomilies)
+    auc = get_AUC_from_anomalities(english_data + tagalog_data)
