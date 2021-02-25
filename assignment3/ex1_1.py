@@ -14,7 +14,7 @@ def run_negative_selection(training_file, n, r, testing_data):
 
 def get_AUC_from_anomalities(data):
     sorted_data = sorted(data, key=lambda x: x[2])
-    
+
     l = len(sorted_data)
 
     distinct_scores = []
@@ -29,15 +29,18 @@ def get_AUC_from_anomalities(data):
 
     distinct_scores.append((prev_i, l))
 
+    l_anom = len([w for (l, w, s) in sorted_data if not l])
+    l_norm = len([w for (l, w, s) in sorted_data if l])
+
     sensitivities = []
     specificities = []
     for i, j in distinct_scores:
         score = sorted_data[i][2]
-        sensitivity = len([w for (l, w, s) in sorted_data if s >= score and l == True])
-        specificity = len([w for (l, w, s) in sorted_data if s < score and l == False])
+        sensitivity = len([w for (l, w, s) in sorted_data if s > score and not l])
+        specificity = len([w for (l, w, s) in sorted_data if s < score and l])
 
-        sensitivities.append(sensitivity / l)
-        specificities.append(specificity / l)
+        sensitivities.append(sensitivity / l_anom)
+        specificities.append(specificity / l_norm)
 
     inverse_spec = np.ones_like(specificities) - specificities
     plt.plot(inverse_spec, sensitivities)
@@ -53,13 +56,13 @@ if __name__ == '__main__':
     training_file = "./negative-selection/english.train"
 
     n = 10
-    r= 4
+    r = 4
 
     testing_english_words = None
     testing_english_labels = None
     testing_english_scores = None
 
-    with open('negative-selection/tagalog.test', 'r') as f:
+    with open('negative-selection/english.test', 'r') as f:
         (testing_english_labels, testing_english_words) = zip(*[(True, s.strip()) for s in f.readlines()])
         testing_english_scores = run_negative_selection(training_file, n, r, testing_english_words)
 
@@ -67,7 +70,7 @@ if __name__ == '__main__':
     testing_tagalog_labels = None
     testing_tagalog_scores = None
 
-    with open('negative-selection/english.test', 'r') as f:
+    with open('negative-selection/tagalog.test', 'r') as f:
         (testing_tagalog_labels, testing_tagalog_words) = zip(*[(False, s.strip()) for s in f.readlines()])
         testing_tagalog_scores = run_negative_selection(training_file, n, r, testing_tagalog_words)
 
