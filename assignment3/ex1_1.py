@@ -13,9 +13,10 @@ def run_negative_selection(training_file, n, r, testing_data):
     p.stdin.write(in_data)
     return [float(s) for s in p.communicate()[0].decode().splitlines()]
 
-def get_AUC_from_anomalities(data: list):
+def get_AUC_from_anomalities(data: list, savename = 'temp.png'):
     """
     :param data: list of tuples (label, word, score)
+    :param savename: name to save to plot as
     :return: AUC
     """
 
@@ -52,13 +53,13 @@ def get_AUC_from_anomalities(data: list):
     inverse_spec = np.ones_like(specificities) - specificities
     auc = metrics.auc(inverse_spec, sensitivities)
 
-
+    plt.figure()
     plt.plot(inverse_spec, sensitivities)
     plt.plot([0.0,1.0], [0.0,1.0], 'r--')
     plt.xlabel('False positive rate (1-specificity)')
     plt.ylabel('True positive rate (Sensitivity)')
     plt.title(f'ROC curve (AUC = {auc})')
-    plt.savefig('temp.png')
+    plt.savefig(savename)
 
     return auc
 
@@ -68,23 +69,26 @@ if __name__ == '__main__':
     n = 10
     r = 4
 
-    testing_english_words = None
-    testing_english_labels = None
-    testing_english_scores = None
+    for r in list(range(1,10)):
 
-    with open('negative-selection/english.test', 'r') as f:
-        (testing_english_labels, testing_english_words) = zip(*[(True, s.strip()) for s in f.readlines()])
-        testing_english_scores = run_negative_selection(training_file, n, r, testing_english_words)
+        testing_english_words = None
+        testing_english_labels = None
+        testing_english_scores = None
 
-    testing_tagalog_words = None
-    testing_tagalog_labels = None
-    testing_tagalog_scores = None
+        with open('negative-selection/english.test', 'r') as f:
+            (testing_english_labels, testing_english_words) = zip(*[(True, s.strip()) for s in f.readlines()])
+            testing_english_scores = run_negative_selection(training_file, n, r, testing_english_words)
 
-    with open('negative-selection/tagalog.test', 'r') as f:
-        (testing_tagalog_labels, testing_tagalog_words) = zip(*[(False, s.strip()) for s in f.readlines()])
-        testing_tagalog_scores = run_negative_selection(training_file, n, r, testing_tagalog_words)
+        testing_tagalog_words = None
+        testing_tagalog_labels = None
+        testing_tagalog_scores = None
 
-    english_data = list(zip(testing_english_labels, testing_english_words, testing_english_scores))
-    tagalog_data = list(zip(testing_tagalog_labels, testing_tagalog_words, testing_tagalog_scores))
+        with open('negative-selection/tagalog.test', 'r') as f:
+            (testing_tagalog_labels, testing_tagalog_words) = zip(*[(False, s.strip()) for s in f.readlines()])
+            testing_tagalog_scores = run_negative_selection(training_file, n, r, testing_tagalog_words)
 
-    auc = get_AUC_from_anomalities(english_data + tagalog_data)
+        english_data = list(zip(testing_english_labels, testing_english_words, testing_english_scores))
+        tagalog_data = list(zip(testing_tagalog_labels, testing_tagalog_words, testing_tagalog_scores))
+
+        auc = get_AUC_from_anomalities(english_data + tagalog_data, "n10r{}".format(r))
+        print("The AUC for R {} is {}".format(r, auc))
