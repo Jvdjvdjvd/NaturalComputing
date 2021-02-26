@@ -13,11 +13,16 @@ def run_negative_selection(training_file, n, r, testing_data):
     p.stdin.write(in_data)
     return [float(s) for s in p.communicate()[0].decode().splitlines()]
 
-def get_AUC_from_anomalities(data):
-    sorted_data = sorted(data, key=lambda x: x[2])
+def get_AUC_from_anomalities(data: list):
+    """
+    :param data: list of tuples (label, word, score)
+    :return: AUC
+    """
 
+    sorted_data = sorted(data, key=lambda x: x[2])
     l = len(sorted_data)
 
+    # create list of distinct scores for higher/lower comparing
     distinct_scores = []
     prev_i = 0
     prev_score = sorted_data[0]
@@ -27,9 +32,9 @@ def get_AUC_from_anomalities(data):
             distinct_scores.append((prev_i, i))
             prev_i = i
             prev_score = score
-
     distinct_scores.append((prev_i, l))
 
+    # get amount of normal / abnormal scores
     l_anom = len([w for (l, w, s) in sorted_data if not l])
     l_norm = len([w for (l, w, s) in sorted_data if l])
 
@@ -43,6 +48,7 @@ def get_AUC_from_anomalities(data):
         sensitivities.append(sensitivity / l_anom)
         specificities.append(specificity / l_norm)
 
+    #calculate AUC and make plots
     inverse_spec = np.ones_like(specificities) - specificities
     auc = metrics.auc(inverse_spec, sensitivities)
 
@@ -54,7 +60,7 @@ def get_AUC_from_anomalities(data):
     plt.title(f'ROC curve (AUC = {auc})')
     plt.savefig('temp.png')
 
-    return None
+    return auc
 
 if __name__ == '__main__':
     training_file = "./negative-selection/english.train"
