@@ -60,6 +60,7 @@ def get_AUC_from_anomalities(data: list, savename = 'temp.png'):
     plt.ylabel('True positive rate (Sensitivity)')
     plt.title(f'ROC curve (AUC = {auc})')
     plt.savefig(savename)
+    plt.close()
 
     return auc
 
@@ -69,8 +70,7 @@ if __name__ == '__main__':
     n = 10
     r = 4
 
-    for r in list(range(1,10)):
-
+    for r in list(range(2,7)):
         testing_english_words = None
         testing_english_labels = None
         testing_english_scores = None
@@ -83,12 +83,18 @@ if __name__ == '__main__':
         testing_tagalog_labels = None
         testing_tagalog_scores = None
 
-        with open('negative-selection/tagalog.test', 'r') as f:
-            (testing_tagalog_labels, testing_tagalog_words) = zip(*[(False, s.strip()) for s in f.readlines()])
-            testing_tagalog_scores = run_negative_selection(training_file, n, r, testing_tagalog_words)
 
-        english_data = list(zip(testing_english_labels, testing_english_words, testing_english_scores))
-        tagalog_data = list(zip(testing_tagalog_labels, testing_tagalog_words, testing_tagalog_scores))
+        for lan in ["hiligaynon", "middle-english", "plautdietsch", "xhosa"]:
+            with open('negative-selection/lang/{}.txt'.format(lan), 'r') as f:
+                (testing_tagalog_labels, testing_tagalog_words) = zip(*[(False, s.strip()) for s in f.readlines()])
+                testing_tagalog_scores = run_negative_selection(training_file, n, r, testing_tagalog_words)
 
-        auc = get_AUC_from_anomalities(english_data + tagalog_data, "n10r{}".format(r))
-        print("The AUC for R {} is {}".format(r, auc))
+        # with open('negative-selection/tagalog.test', 'r') as f:
+        #   (testing_tagalog_labels, testing_tagalog_words) = zip(*[(False, s.strip()) for s in f.readlines()])
+        #   testing_tagalog_scores = run_negative_selection(training_file, n, r, testing_tagalog_words)
+
+            english_data = list(zip(testing_english_labels, testing_english_words, testing_english_scores))
+            tagalog_data = list(zip(testing_tagalog_labels, testing_tagalog_words, testing_tagalog_scores))
+
+            auc = get_AUC_from_anomalities(english_data + tagalog_data)
+            print("The ({}) AUC for R {} is {}".format(lan, r, auc))
