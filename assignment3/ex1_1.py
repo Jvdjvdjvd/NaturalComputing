@@ -2,6 +2,7 @@
 
 import numpy as np
 import matplotlib.pyplot as plt
+import sklearn.metrics as metrics
 from subprocess import Popen, PIPE, STDOUT
 from time import sleep
 
@@ -43,14 +44,17 @@ def get_AUC_from_anomalities(data):
         specificities.append(specificity / l_norm)
 
     inverse_spec = np.ones_like(specificities) - specificities
+    auc = metrics.auc(inverse_spec, sensitivities)
+
+
     plt.plot(inverse_spec, sensitivities)
     plt.plot([0.0,1.0], [0.0,1.0], 'r--')
     plt.xlabel('False positive rate (1-specificity)')
     plt.ylabel('True positive rate (Sensitivity)')
-    plt.title('ROC curve')
+    plt.title(f'ROC curve (AUC = {auc})')
     plt.savefig('temp.png')
 
-    # return None
+    return None
 
 if __name__ == '__main__':
     training_file = "./negative-selection/english.train"
