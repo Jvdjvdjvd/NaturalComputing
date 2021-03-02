@@ -26,9 +26,11 @@ def get_AUC_from_anomalities(data: list, savename = 'temp.png'):
     # create list of distinct scores for higher/lower comparing
     distinct_scores = []
     prev_i = 0
-    prev_score = sorted_data[0]
+    prev_score = sorted_data[0][2]
     for i, d in enumerate(sorted_data):
         (_, _, score) = d
+        print("score", score)
+        print("prev_sccore", prev_score)
         if prev_score != score:
             distinct_scores.append((prev_i, i))
             prev_i = i
