@@ -7,6 +7,7 @@ import tempfile as tmp
 import os as os
 from subprocess import Popen, PIPE, STDOUT
 from time import sleep
+from threading import Thread
 
 def substringer(windows_size, data: str) -> list : # parses string and return the possible substrings
     substrings = [data[i:i+windows_size] for i in range(len(data)-windows_size+1)]
@@ -31,6 +32,9 @@ def chunk(chunk_size, data: list) -> list: # separate the strings in a list to c
 
     return substrings
 
+def write_pipe(pipe, data):
+    with pipe:
+        pipe.write(data)
 
 def run_negative_selection(training_file, n, r, testing_data, alphabet_file = None): # performs the negative selection
     cmd = ['java', '-jar', './negative-selection/negsel2.jar', '-self', training_file, '-n', str(n), '-r', str(r), '-c', '-l']
@@ -38,11 +42,15 @@ def run_negative_selection(training_file, n, r, testing_data, alphabet_file = No
         cmd = cmd + ['-alphabet', f'file://{alphabet_file}']
 
     in_data = bytes('\n'.join(testing_data), encoding="raw_unicode_escape") + b'\x1a'
-    p = Popen(cmd, stdout=PIPE, stdin=PIPE, stderr=STDOUT)
-    p.stdin.write(in_data)
-    res = p.communicate()[0].decode()
+    res = []
+    with Popen(cmd, stdin=PIPE, stdout=PIPE) as p:
+        Thread(target=write_pipe, args=[p.stdin, in_data]).start()
+        with p.stdout:
+            for line in iter(p.stdout.readline, b''):
+                res.append(float(line.decode()))
 
-    return [float(s) for s in res.splitlines()]
+    p.wait()
+    return res
 
 def get_AUC_from_anomalies(data: list, savename = 'temp.png'): 
     """
