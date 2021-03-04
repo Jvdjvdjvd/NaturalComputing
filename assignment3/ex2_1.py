@@ -49,7 +49,6 @@ def run_negative_selection(training_file, n, r, testing_data, alphabet_file = No
             for line in iter(p.stdout.readline, b''):
                 res.append(float(line.decode()))
 
-    p.wait()
     return res
 
 def get_AUC_from_anomalies(data: list, savename = 'temp.png'): 
