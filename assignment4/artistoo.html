@@ -23,24 +23,52 @@
         cells.push(cid)
       }
 
+      function seedCell_obstacles() {
+        for (let i = 0; i < 10; i++) {
+          seedCell(2);
+        }
+      }
+
+
+      function applyConfigToView(given_config) {
+        document.getElementById("jte").value = given_config.J[0][1] = given_config.J[1][0]
+        document.getElementById("jtt").value = given_config.J[1][1]
+        document.getElementById("volume").value = given_config.V[1]
+        document.getElementById("lvolume").value = given_config.LAMBDA_V[1]
+        document.getElementById("perimeter").value = given_config.P[1]
+        document.getElementById("lperim").value = given_config.LAMBDA_P[1]
+        document.getElementById("mact").value = given_config.MAX_ACT[1]
+        document.getElementById("lact").value = given_config.LAMBDA_ACT[1]
+        document.getElementById("t").value = given_config.T
+      }
+
       function initialize() {
-        // Create a CPM object
-        C = new CPM.CPM([250, 250], {
-          LAMBDA_CONNECTIVITY: [0, 0],
-          LAMBDA_P: [0, 2],
-          LAMBDA_V: [0, 50],
-          LAMBDA_ACT: [0, 140],
-          MAX_ACT: [0, 20],
-          P: [0, 340],
-          V: [0, 500],
+        
+
+        // create configs
+
+        let config = {
+          LAMBDA_CONNECTIVITY: [0, 0, 0], 
+          LAMBDA_P: [0, 2, 0],
+          LAMBDA_V: [0, 50, 50],
+          LAMBDA_ACT: [0, 200, 0],
+          MAX_ACT: [0, 50, 0],
+          P: [0, 340, 0],
+          V: [0, 500, 500],
           J: [
-            [0, 20],
-            [20, 0]
+            [0, 20, 200],
+            [20, 0, 5000],
+            [200, 5000, 5000] 
           ],
-          T: 20,
+          T: 99,
           ACT_MEAN: "geometric",
           torus: true
-        })
+        }
+
+        // Create a CPM object
+        C = new CPM.CPM([250, 250], config)
+
+
         C.add(new CPM.Adhesion(C.conf))
         C.add(new CPM.VolumeConstraint(C.conf))
         C.add(new CPM.PerimeterConstraint(C.conf))
@@ -68,7 +96,10 @@
 
         C.stop = false
         C.rate = 2
+        applyConfigToView(config)
+        seedCell_obstacles()
         timestep()
+
       }
 
       function seedCells(ncells) {
@@ -108,6 +139,7 @@
         Cim.clear("eaecef")
         // Draw celltype 1 black with activity values
         Cim.drawCells(1, "000000")
+        Cim.drawCells(2, "FF0000")
         Cim.drawActivityValues(1, A)
       }
 
