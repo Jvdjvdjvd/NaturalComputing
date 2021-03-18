@@ -23,7 +23,7 @@
         cells.push(cid)
       }
 
-      function seedCell_obstacles() {
+      function seedCellObstacle() {
         for (let i = 0; i < 10; i++) {
           seedCell(2);
         }
@@ -60,7 +60,7 @@
             [20, 0, 5000],
             [200, 5000, 5000] 
           ],
-          T: 99,
+          T: 20,
           ACT_MEAN: "geometric",
           torus: true
         }
@@ -97,7 +97,7 @@
         C.stop = false
         C.rate = 2
         applyConfigToView(config)
-        seedCell_obstacles()
+        seedCellObstacle()
         timestep()
 
       }
