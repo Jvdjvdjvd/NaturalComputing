@@ -34,8 +34,8 @@ def get_AUC_from_anomalies(data: list, savename = 'temp.png'):
             prev_score = score
     distinct_scores.append((prev_i, l))
 
-    sensitivities = []
-    specificities = []
+    sensitivities = [1] #ensure start at 0,0 and 1,1
+    specificities = [0] #ensure start at 0,0 and 1,1
     for i, j in distinct_scores:
         score = sorted_data[i][2]
         TP = len([w for (l, w, s) in sorted_data if s >= score and l])
@@ -50,6 +50,8 @@ def get_AUC_from_anomalies(data: list, savename = 'temp.png'):
 
     #calculate AUC and make plots
     inverse_spec = np.ones_like(specificities) - specificities
+    sensitivities.append(0) #ensure start at 0,0 and 1,1
+    inverse_spec = np.append(inverse_spec, 0) #ensure start at 0,0 and 1,1
     auc = metrics.auc(inverse_spec, sensitivities)
 
     plt.figure()
@@ -60,6 +62,7 @@ def get_AUC_from_anomalies(data: list, savename = 'temp.png'):
     plt.title(f'ROC curve (AUC = {auc})')
     plt.savefig(savename)
     plt.close()
+
 
     return auc
 

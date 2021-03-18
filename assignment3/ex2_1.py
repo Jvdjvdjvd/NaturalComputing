@@ -73,24 +73,26 @@ def get_AUC_from_anomalies(data: list, savename = 'temp.png'):
             prev_score = score
     distinct_scores.append((prev_i, l))
 
-    sensitivities = []
-    specificities = []
+    sensitivities = [1] #ensure start at 0,0 and 1,1
+    specificities = [0] #ensure start at 0,0 and 1,1
     for i, j in distinct_scores:
         score = sorted_data[i][2]
         TP = len([w for (l, w, s) in sorted_data if s >= score and l])
         FP = len([w for (l, w, s) in sorted_data if s >= score and not l])
         TN = len([w for (l, w, s) in sorted_data if s < score and not l])
         FN = len([w for (l, w, s) in sorted_data if s < score and l])
-        TPR = TP / (TP + FN)
+        TPR = TP / (TP+FN)
         TNR = TN / (TN + FP)
 
         sensitivities.append(TPR)
         specificities.append(TNR)
 
-    # calculate AUC and make plots
+    #calculate AUC and make plots
     inverse_spec = np.ones_like(specificities) - specificities
+    sensitivities.append(0) #ensure start at 0,0 and 1,1
+    inverse_spec = np.append(inverse_spec, 0) #ensure start at 0,0 and 1,1
     auc = metrics.auc(inverse_spec, sensitivities)
-
+    
     plt.figure()
     plt.plot(inverse_spec, sensitivities)
     plt.plot([0.0,1.0], [0.0,1.0], 'r--')
