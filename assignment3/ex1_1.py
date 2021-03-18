@@ -13,13 +13,12 @@ def run_negative_selection(training_file, n, r, testing_data):
     p.stdin.write(in_data)
     return [float(s) for s in p.communicate()[0].decode().splitlines()]
 
-def get_AUC_from_anomalities(data: list, savename = 'temp.png'):
+def get_AUC_from_anomalies(data: list, savename = 'temp.png'):
     """
     :param data: list of tuples (label, word, score)
     :param savename: name to save to plot as
     :return: AUC
     """
-
     sorted_data = sorted(data, key=lambda x: x[2])
     l = len(sorted_data)
 
@@ -29,27 +28,25 @@ def get_AUC_from_anomalities(data: list, savename = 'temp.png'):
     prev_score = sorted_data[0][2]
     for i, d in enumerate(sorted_data):
         (_, _, score) = d
-        print("score", score)
-        print("prev_sccore", prev_score)
         if prev_score != score:
             distinct_scores.append((prev_i, i))
             prev_i = i
             prev_score = score
     distinct_scores.append((prev_i, l))
 
-    # get amount of normal / abnormal scores
-    l_anom = len([w for (l, w, s) in sorted_data if not l])
-    l_norm = len([w for (l, w, s) in sorted_data if l])
-
     sensitivities = []
     specificities = []
     for i, j in distinct_scores:
         score = sorted_data[i][2]
-        sensitivity = len([w for (l, w, s) in sorted_data if s > score and not l])
-        specificity = len([w for (l, w, s) in sorted_data if s < score and l])
+        TP = len([w for (l, w, s) in sorted_data if s >= score and l])
+        FP = len([w for (l, w, s) in sorted_data if s >= score and not l])
+        TN = len([w for (l, w, s) in sorted_data if s < score and not l])
+        FN = len([w for (l, w, s) in sorted_data if s < score and l])
+        TPR = TP / (TP+FN)
+        TNR = TN / (TN + FP)
 
-        sensitivities.append(sensitivity / l_anom)
-        specificities.append(specificity / l_norm)
+        sensitivities.append(TPR)
+        specificities.append(TNR)
 
     #calculate AUC and make plots
     inverse_spec = np.ones_like(specificities) - specificities
@@ -72,7 +69,7 @@ if __name__ == '__main__':
     n = 10
     r = 4
 
-    for r in list(range(2,7)):
+    for r in list(range(287)):
         testing_english_words = None
         testing_english_labels = None
         testing_english_scores = None
@@ -98,5 +95,5 @@ if __name__ == '__main__':
             english_data = list(zip(testing_english_labels, testing_english_words, testing_english_scores))
             tagalog_data = list(zip(testing_tagalog_labels, testing_tagalog_words, testing_tagalog_scores))
 
-            auc = get_AUC_from_anomalities(english_data + tagalog_data)
+            auc = get_AUC_from_anomalies(english_data + tagalog_data)
             print("The ({}) AUC for R {} is {}".format(lan, r, auc))

@@ -73,19 +73,19 @@ def get_AUC_from_anomalies(data: list, savename = 'temp.png'):
             prev_score = score
     distinct_scores.append((prev_i, l))
 
-    # get amount of normal / abnormal scores
-    l_anom = len([w for (l, w, s) in sorted_data if not l])
-    l_norm = len([w for (l, w, s) in sorted_data if l])
-
     sensitivities = []
     specificities = []
     for i, j in distinct_scores:
         score = sorted_data[i][2]
-        sensitivity = len([w for (l, w, s) in sorted_data if s >= score and not l])
-        specificity = len([w for (l, w, s) in sorted_data if s < score and l])
+        TP = len([w for (l, w, s) in sorted_data if s >= score and l])
+        FP = len([w for (l, w, s) in sorted_data if s >= score and not l])
+        TN = len([w for (l, w, s) in sorted_data if s < score and not l])
+        FN = len([w for (l, w, s) in sorted_data if s < score and l])
+        TPR = TP / (TP + FN)
+        TNR = TN / (TN + FP)
 
-        sensitivities.append(sensitivity / l_anom)
-        specificities.append(specificity / l_norm)
+        sensitivities.append(TPR)
+        specificities.append(TNR)
 
     # calculate AUC and make plots
     inverse_spec = np.ones_like(specificities) - specificities
@@ -99,6 +99,12 @@ def get_AUC_from_anomalies(data: list, savename = 'temp.png'):
     plt.title(f'ROC curve (AUC = {auc})')
     plt.savefig(savename)
     plt.close()
+
+    labels = np.array([d[0] for d in data])
+    scores = np.array([d[2] for d in data])
+    auc_metrics = metrics.roc_auc_score(labels, scores)
+    print(f"auc delta: {auc - auc_metrics}")
+    print("=========================")
 
     return auc
 
