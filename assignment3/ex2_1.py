@@ -104,7 +104,6 @@ def get_AUC_from_anomalies(data: list, savename = 'temp.png'):
     scores = np.array([d[2] for d in data])
     auc_metrics = metrics.roc_auc_score(labels, scores)
     print(f"auc delta: {auc - auc_metrics}")
-    print("=========================")
 
     return auc
 

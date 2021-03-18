@@ -69,7 +69,7 @@ if __name__ == '__main__':
     n = 10
     r = 4
 
-    for r in list(range(287)):
+    for r in list(range(1,10)):
         testing_english_words = None
         testing_english_labels = None
         testing_english_scores = None
