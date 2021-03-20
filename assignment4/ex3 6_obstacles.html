@@ -1,0 +1,274 @@
+<html lang="en" class="hydrated">
+  <head>
+    <meta http-equiv="Content-Type" content="text/html; charset=UTF-8">
+    <title>2D CPM</title>
+    <meta charset="utf-8">
+    <style data-styles="">ion-icon{visibility:hidden}.hydrated{visibility:inherit}</style>
+    <link href="stylesheet.css" rel="stylesheet">
+    <script type="text/javascript" src="cpm.js"></script>
+    <script type="text/javascript">
+      /* An example 2D CPM with multiple cells of different kinds, and multiple
+      visualizations. */
+      let C, Cim, t = 0,
+        burnin_time = 50,
+        maxtime = 500000,
+        A
+      let cells = []
+
+      const x_res = 250;
+      const y_res = 250;
+
+      const numberOfObstacelsAxis = 6;
+
+      function seedCell(k) {
+        let x = C.ran(0, 249),
+          y = C.ran(0, 249)
+        let cid = C.makeNewCellID(k)
+        C.setpix([x, y], cid)
+        cells.push(cid)
+      }
+
+      function seedCellObstacle() {
+        dx = x_res / numberOfObstacelsAxis;
+        dy = y_res / numberOfObstacelsAxis;
+        start_x = dx / 2;
+        start_y = dy / 2;
+        for (let i = 0; i < numberOfObstacelsAxis; ++i) {
+          for (let j = 0; j < numberOfObstacelsAxis; ++j) {
+            x = Math.round(start_x + i * dx);
+            y = Math.round(start_y + j * dy);
+            let cid = C.makeNewCellID(2)
+            C.setpix([x, y], cid)
+            cells.push(cid)
+          }
+        }
+      }
+
+
+      function applyConfigToView(given_config) {
+        document.getElementById("jte").value = given_config.J[0][1] = given_config.J[1][0]
+        document.getElementById("jtt").value = given_config.J[1][1]
+        document.getElementById("volume").value = given_config.V[1]
+        document.getElementById("lvolume").value = given_config.LAMBDA_V[1]
+        document.getElementById("perimeter").value = given_config.P[1]
+        document.getElementById("lperim").value = given_config.LAMBDA_P[1]
+        document.getElementById("mact").value = given_config.MAX_ACT[1]
+        document.getElementById("lact").value = given_config.LAMBDA_ACT[1]
+        document.getElementById("t").value = given_config.T
+      }
+
+      function initialize() {
+        // create configs
+        const perimeterFromVolume = (v) => {
+          const r = Math.sqrt(v / Math.PI);
+          return Math.round(2 * Math.PI * r);
+        };
+
+        const obstacleVolume = 250;
+
+        let config = {
+          LAMBDA_CONNECTIVITY: [0, 0, 0], 
+          LAMBDA_P: [0, 2, 50],
+          LAMBDA_V: [0, 50, 50],
+          LAMBDA_ACT: [0, 200, 0],
+          MAX_ACT: [0, 50, 0],
+          P: [0, 340, perimeterFromVolume(obstacleVolume)],
+          V: [0, 500, obstacleVolume],
+          J: [
+            [0, 20, 200],
+            [20, 0, 5000],
+            [200, 5000, 5000] 
+          ],
+          T: 20,
+          ACT_MEAN: "geometric",
+          torus: true
+        }
+
+        // Create a CPM object
+        C = new CPM.CPM([x_res, y_res], config)
+
+
+        C.add(new CPM.Adhesion(C.conf))
+        C.add(new CPM.VolumeConstraint(C.conf))
+        C.add(new CPM.PerimeterConstraint(C.conf))
+        A = new CPM.ActivityConstraint(C.conf)
+        C.add(A)
+
+        // Create a canvas to draw on
+        let canvasDiv = document.getElementById("canvas-div")
+        Cim = new CPM.Canvas(C, {
+          zoom: 2,
+          parentElement: canvasDiv
+        })
+        let canvas = canvasDiv.childNodes[1];
+        console.log(canvas)
+        canvas.onclick = function(e) {
+          let x = Math.round((e.clientX - canvas.offsetLeft) / 2);
+          let y = Math.round((e.clientY - canvas.offsetTop) / 2);
+          console.log(x, y);
+          let cid = C.makeNewCellID(1)
+          C.setpix([x, y], cid)
+          cells.push(cid)
+
+        }
+        //Cs = new CPMStats( C )
+
+        C.stop = false
+        C.rate = 2
+        applyConfigToView(config)
+        seedCellObstacle()
+        timestep()
+
+      }
+
+      function seedCells(ncells) {
+        for (let i = 0; i < ncells; i++) {
+          seedCell(1)
+        }
+        for (let i = 0; i < burnin_time; i++) {
+          C.monteCarloStep()
+        }
+        if (C.stop) {
+          draw()
+        }
+      }
+
+      function killCell() {
+        if (cells.length > 0) {
+          var t = cells.pop()
+        }
+        for (let cp of C.cellPixels()) {
+          if (cp[1] == t) {
+            C.setpix(cp[0], 0)
+          }
+        }
+      }
+
+      function killAllCells() {
+        if (cells.length == 0) return
+        for (let cp of C.cellPixels()) {
+          C.setpix(cp[0], 0)
+        }
+        cells = []
+      }
+
+
+      function draw() {
+        // Clear the canvas (white), and draw the stroma border in gray
+        Cim.clear("eaecef")
+        // Draw celltype 1 black with activity values
+        Cim.drawCells(1, "000000")
+        Cim.drawCells(2, "FF0000")
+        Cim.drawActivityValues(1, A)
+      }
+
+      // Continue until the maximum simulation time is reached. 
+      function timestep() {
+        // Update the grid with one MCS
+        for (let i = 0; i < C.rate; i++) {
+          C.monteCarloStep()
+        }
+        draw()
+
+        if (t++ < maxtime && !C.stop) {
+          requestAnimationFrame(timestep)
+        }
+      }
+
+      function startsim() {
+        if (C.stop) {
+          C.stop = false
+          timestep()
+        }
+      }
+
+      function stopsim() {
+        C.stop = true
+      }
+    </script>
+    <script type="module" src="https://unpkg.com/ionicons@5.1.2/dist/ionicons/ionicons.esm.js" data-stencil-namespace="ionicons"></script><script nomodule="" src="https://unpkg.com/ionicons@5.1.2/dist/ionicons/ionicons.js" data-stencil-namespace="ionicons"></script>
+  </head>
+  <body onload="initialize()">
+    <div id="interface">
+      <div id="buttons">
+        <button onclick="startsim()">
+          <ion-icon name="play" role="img" class="md hydrated" aria-label="play"></ion-icon>
+          start
+        </button>
+        <button onclick="stopsim()">
+          <ion-icon name="pause" role="img" class="md hydrated" aria-label="pause"></ion-icon>
+          stop
+        </button>
+        <button onclick="seedCells(1)">seed cell</button>
+        <button onclick="seedCells(10)">+10 cells</button>
+        <button onclick="seedCells(100)">+100 cells</button>
+        <button onclick="killCell()">remove cell</button>
+        <button onclick="killAllCells()">remove all cells</button>
+      </div>
+      <div class="slidecontainer">
+        <form autocomplete="off">
+          <table>
+            <tbody>
+              <tr>
+                <td>Adhesion<sub>cell-matrix</sub></td>
+                <td>
+                  <input type="text" value="20" id="jte" oninput="C.conf.J[1][0]=C.conf.J[0][1]=parseInt(this.value)">
+                </td>
+                <td>Adhesion<sub>cell-cell</sub></td>
+                <td>
+                  <input type="text" value="0" id="jtt" oninput="C.conf.J[1][1]=parseInt(this.value)">
+                </td>
+              </tr>
+              <tr>
+                <td>Volume</td>
+                <td>
+                  <input type="text" value="500" id="volume" oninput="if(this.value>0){C.conf.V[1]=this.value}">
+                </td>
+                <td>λ<sub>Volume</sub></td>
+                <td>
+                  <input type="text" value="50" id="lvolume" oninput="C.conf.LAMBDA_V[1]=this.value">
+                </td>
+              </tr>
+              <tr>
+                <td>Perimeter</td>
+                <td>
+                  <input type="text" value="340" id="perimeter" oninput="C.conf.P[1]=this.value">
+                </td>
+                <td>λ<sub>P</sub></td>
+                <td>
+                  <input type="text" value="2" id="lperim" oninput="C.conf.LAMBDA_P[1]=this.value">
+                </td>
+              </tr>
+              <tr>
+                <td>Max<sub>Act</sub></td>
+                <td>
+                  <input type="text" value="20" id="mact" oninput="C.conf.MAX_ACT[1]=this.value">
+                </td>
+                <td>λ<sub>Act</sub></td>
+                <td>
+                  <input type="text" value="140" id="lact" oninput="C.conf.LAMBDA_ACT[1]=this.value">
+                </td>
+              </tr>
+              <tr>
+                <td>T</td>
+                <td>
+                  <input type="text" value="20" id="t" oninput="C.conf.T=this.value">
+                </td>
+                <td>Framerate</td>
+                <td>
+                  <input type="text" value="1" id="frames" oninput="C.rate=this.value">
+                </td>
+              </tr>
+            </tbody>
+          </table>
+        </form>
+      </div>
+    </div>
+    <div id="canvas-div">
+    </div>
+    <div id="footer">
+      Built with <a href="https://artistoo.net/">Artistoo</a> by the Radboud <a href="https://computational-immunology.org">Computational Immunology Group</a>.
+    </div>
+    <script src="https://unpkg.com/ionicons@5.1.2/dist/ionicons.js"></script>
+  </body>
+</html>
