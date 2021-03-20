@@ -24,7 +24,7 @@
       }
 
       function seedCellObstacle() {
-        for (let i = 0; i < 10; i++) {
+        for (let i = 0; i < 15; i++) {
           seedCell(2);
         }
       }
@@ -45,16 +45,21 @@
       function initialize() {
         
 
-        // create configs
+        const perimeterFromVolume = (v) => {
+          const r = Math.sqrt(v / Math.PI);
+          return Math.round(2 * Math.PI * r);
+        };
+
+        const obstacleVolume = 500;
 
         let config = {
           LAMBDA_CONNECTIVITY: [0, 0, 0], 
-          LAMBDA_P: [0, 2, 0],
+          LAMBDA_P: [0, 2, 50],
           LAMBDA_V: [0, 50, 50],
           LAMBDA_ACT: [0, 200, 0],
           MAX_ACT: [0, 50, 0],
-          P: [0, 340, 0],
-          V: [0, 500, 500],
+          P: [0, 340, perimeterFromVolume(obstacleVolume)],
+          V: [0, 500, obstacleVolume],
           J: [
             [0, 20, 200],
             [20, 0, 5000],
