@@ -51,7 +51,7 @@ def run_negative_selection(training_file, n, r, testing_data, alphabet_file = No
 
     return res
 
-def get_AUC_from_anomalies(data: list, savename = 'temp.png'): 
+def get_AUC_from_anomalies(data: list, savename = 'temp.png'):
     """
     :param data: list of tuples (label, word, score)
     :param savename: name to save to plot as
@@ -92,7 +92,7 @@ def get_AUC_from_anomalies(data: list, savename = 'temp.png'):
     sensitivities.append(0) #ensure start at 0,0 and 1,1
     inverse_spec = np.append(inverse_spec, 0) #ensure start at 0,0 and 1,1
     auc = metrics.auc(inverse_spec, sensitivities)
-    
+
     plt.figure()
     plt.plot(inverse_spec, sensitivities)
     plt.plot([0.0,1.0], [0.0,1.0], 'r--')
@@ -127,7 +127,7 @@ def run_for_training_set(training_file, alphabet_file, test_data_files):
     # loop though multiple r and n values
     for n in range(3, max_n):
         for r in range (3, n):
-            processed_train_file = "" # transform train file to chucks   
+            processed_train_file = "" # transform train file to chucks
             with open(training_file, 'r') as f:
                 train_lines = [x.strip() for x in f.readlines()]
                 train_data = chunk(n, train_lines)
@@ -142,7 +142,7 @@ def run_for_training_set(training_file, alphabet_file, test_data_files):
                 print(f"testing file: {d}")
                 labels = None
                 with open(d + ".labels", 'r') as f:
-                    labels = [not(bool(int(x.strip()))) for x in f.readlines()]
+                    labels = [(bool(int(x.strip()))) for x in f.readlines()]
                     testing_labels.append(labels)
 
                 local_testing_words = []
@@ -171,7 +171,7 @@ def run_for_training_set(training_file, alphabet_file, test_data_files):
 if __name__ == '__main__':
     training_file = "./negative-selection/syscalls/snd-unm/snd-unm.train"
     alphabet_file = "./negative-selection/syscalls/snd-unm/snd-unm.alpha"
-    
+
     test_data_files = [
         "./negative-selection/syscalls/snd-unm/snd-unm.1",
         "./negative-selection/syscalls/snd-unm/snd-unm.2",
@@ -182,7 +182,7 @@ if __name__ == '__main__':
 
     training_file = "./negative-selection/syscalls/snd-cert/snd-cert.train"
     alphabet_file = "./negative-selection/syscalls/snd-cert/snd-cert.alpha"
-    
+
     test_data_files = [
         "./negative-selection/syscalls/snd-cert/snd-cert.1",
         "./negative-selection/syscalls/snd-cert/snd-cert.2",
