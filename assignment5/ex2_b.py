@@ -1,14 +1,17 @@
 #!/usr/bin/env python3
 
-from math import factorial, ceil
+from math import factorial, floor
 
 def probability_mass_function(x, c, p):
   a = factorial(c) / (factorial(x) * factorial(c - x))
   b = p**x * (1 - p)**(c - x)
   return a * b
 
-p = 0.6
-c = 31
+def majority_wins(c, p):
+  return sum([probability_mass_function(k, c, p) for k in range(floor(c / 2) + 1, c + 1)])
 
-majority_wins = sum([probability_mass_function(x, c, p) for x in range(ceil(c / 2), c + 1)])
-print(majority_wins)
+if __name__ == '__main__':
+  p = 0.6
+  c = 31
+
+  print(majority_wins(c, p))
